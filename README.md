@@ -26,6 +26,25 @@ The notebooks focus on:
 
 Each framework notebook records timing statistics, throughput metrics, and device information, then writes a result file into `result/`. The comparison notebook loads those result files and generates charts.
 
+## Key Results
+
+Recorded on an **AMD Radeon RX 6800S** with ROCm (February 2026). Higher is better.
+
+| Benchmark | PyTorch `2.10.0+rocm7.1` | TensorFlow `2.20.0-dev0` | JAX `0.7.1` |
+|---|---|---|---|
+| Peak matmul, float32 (TFLOPS) | **7.87** (1024²) | 3.77 (8192²) | 6.50 (2048²) |
+| Peak matmul, float16 (TFLOPS) | **14.54** (2048²) | 7.57 (8192²) | 11.97 (2048²) |
+| ResNet-18-like training, batch 32 (images/s) | **325.4** | 204.2 | 212.2 |
+| ResNet-18-like inference, batch 32 (images/s) | **1,864.6** | 1,243.8 | 1,182.2 |
+| BERT-base-like training (samples/s) | 260.5 | 143.8 | **265.5** |
+| Peak host-to-device bandwidth (GB/s) | **13.40** | 1.82 | 7.33 |
+
+- **PyTorch** was fastest for raw matrix multiplication, CNN training and inference, and memory transfers on this GPU.
+- **JAX** matched PyTorch on transformer training but pays a JIT cost on the first call: about 201 ms for a 1024² matmul and 3.7 s for 4096², versus 0.07 ms and 0.69 ms after compilation.
+- **TensorFlow** (a self-built ROCm version) was slowest in most categories, with much lower host-to-device bandwidth.
+
+![Overall comparison](result/comparison_overall.png)
+
 ## Hardware and Software
 
 ### Hardware used in the recorded runs
@@ -147,7 +166,7 @@ Recorded metrics include:
 - Images per second
 - Peak GPU memory usage
 
-TensorFlow and PyTorch also include a mixed-precision variant for batch size 32.
+All three frameworks also include a mixed-precision variant for batch size 32.
 
 ### 6. Transformer model training
 
@@ -240,8 +259,15 @@ The comparison notebook reads the result JSON files and can generate these figur
 - `comparison_layers.png`
 - `comparison_training.png`
 - `comparison_memory.png`
+- `comparison_overall.png`
 
-It also prints a summary table in the notebook output.
+It also prints a summary table in the notebook output. Charts from the recorded runs:
+
+![Matrix multiplication](result/comparison_matmul.png)
+![Element-wise operations](result/comparison_elementwise.png)
+![Layer operations](result/comparison_layers.png)
+![Model training](result/comparison_training.png)
+![Memory transfer](result/comparison_memory.png)
 
 ## How to Run
 
@@ -255,7 +281,11 @@ If `rocm-smi` fails, fix the ROCm driver and device setup first.
 
 ### 2. Open the notebooks
 
-Launch Jupyter and open the benchmark notebooks in the repository root.
+```bash
+git clone https://github.com/harrymardika/rocm-test.git
+cd rocm-test
+jupyter lab
+```
 
 ### 3. Run the framework notebooks
 
@@ -348,3 +378,7 @@ These values come from the JSON files under `result/` and may change if you reru
 ## License
 
 No explicit license file is present in this repository. Add one if you plan to share or publish the experiment.
+
+## Author
+
+**Harry Mardika** · [GitHub](https://github.com/harrymardika)
